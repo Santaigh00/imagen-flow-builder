@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar, User, Mail, Bed } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import { supabase } from '../integrations/supabase/client';
 
 export const ReservationForm = () => {
   const [formData, setFormData] = useState({
@@ -84,27 +85,59 @@ export const ReservationForm = () => {
     
     setIsSubmitting(true);
     
-    // Simular envío de datos
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log('Datos de reserva:', formData);
-    
-    toast({
-      title: "¡Reserva recibida!",
-      description: `Gracias ${formData.nombre}, tu reserva ha sido procesada exitosamente. Te contactaremos pronto.`,
-      duration: 5000
-    });
-    
-    // Limpiar formulario
-    setFormData({
-      nombre: '',
-      correo: '',
-      fechaEntrada: '',
-      fechaSalida: '',
-      tipoHabitacion: ''
-    });
-    
-    setIsSubmitting(false);
+    try {
+      // Guardar en Supabase
+      const { data, error } = await supabase
+        .from('reservas')
+        .insert([
+          {
+            nombre: formData.nombre,
+            correo: formData.correo,
+            fecha_entrada: formData.fechaEntrada,
+            fecha_salida: formData.fechaSalida,
+            tipo_habitacion: formData.tipoHabitacion,
+            estado: 'pendiente'
+          }
+        ])
+        .select();
+
+      if (error) {
+        console.error('Error al guardar reserva:', error);
+        toast({
+          title: "Error al procesar reserva",
+          description: "Hubo un problema al guardar tu reserva. Por favor intenta nuevamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Reserva guardada exitosamente:', data);
+      
+      toast({
+        title: "¡Reserva confirmada!",
+        description: `Gracias ${formData.nombre}, tu reserva ha sido guardada exitosamente. Te contactaremos pronto.`,
+        duration: 5000
+      });
+      
+      // Limpiar formulario
+      setFormData({
+        nombre: '',
+        correo: '',
+        fechaEntrada: '',
+        fechaSalida: '',
+        tipoHabitacion: ''
+      });
+      
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Ocurrió un error al procesar tu reserva. Por favor intenta nuevamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -212,7 +245,7 @@ export const ReservationForm = () => {
                 disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-600 to-amber-600 hover:from-blue-700 hover:to-amber-700 text-white text-lg py-4 rounded-lg font-semibold transition-all duration-300 hover:scale-105"
               >
-                {isSubmitting ? 'Procesando Reserva...' : 'Confirmar Reserva'}
+                {isSubmitting ? 'Guardando Reserva...' : 'Confirmar Reserva'}
               </Button>
             </form>
           </CardContent>
