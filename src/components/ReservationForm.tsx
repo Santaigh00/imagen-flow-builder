@@ -86,7 +86,14 @@ export const ReservationForm = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('=== INICIO DEBUG SUPABASE ===');
+      console.log('Datos de reserva:', formData);
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+      console.log('Supabase client:', supabase);
+      
       // Guardar en Supabase
+      console.log('Intentando insertar en Supabase...');
       const { data, error } = await supabase
         .from('reservas')
         .insert([
@@ -101,17 +108,27 @@ export const ReservationForm = () => {
         ])
         .select();
 
+      console.log('Respuesta de Supabase:');
+      console.log('Data:', data);
+      console.log('Error:', error);
+
       if (error) {
-        console.error('Error al guardar reserva:', error);
+        console.error('Error detallado al guardar reserva:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        
         toast({
           title: "Error al procesar reserva",
-          description: "Hubo un problema al guardar tu reserva. Por favor intenta nuevamente.",
+          description: `Error: ${error.message}. Revisa la consola para más detalles.`,
           variant: "destructive"
         });
         return;
       }
 
       console.log('Reserva guardada exitosamente:', data);
+      console.log('=== FIN DEBUG SUPABASE ===');
       
       toast({
         title: "¡Reserva confirmada!",
@@ -129,10 +146,11 @@ export const ReservationForm = () => {
       });
       
     } catch (error) {
-      console.error('Error inesperado:', error);
+      console.error('Error inesperado completo:', error);
+      console.error('Error stack:', error.stack);
       toast({
         title: "Error inesperado",
-        description: "Ocurrió un error al procesar tu reserva. Por favor intenta nuevamente.",
+        description: "Ocurrió un error al procesar tu reserva. Revisa la consola para más detalles.",
         variant: "destructive"
       });
     } finally {
